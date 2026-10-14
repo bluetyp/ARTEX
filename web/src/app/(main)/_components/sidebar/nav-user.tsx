@@ -31,11 +31,9 @@ export function NavUser({
   const { isMobile } = useSidebar();
   const [pwOpen, setPwOpen] = React.useState(false);
 
-  function handleLogout() {
-    auth.clearToken();
-    // 硬跳转：让浏览器用已清除的 cookie 发起全新请求，
-    // middleware 才能正确读到空 token 并放行 /login
-    window.location.href = "/login";
+  async function handleLogout() {
+    try { await auth.logout(); }
+    catch { window.alert("退出失败，请稍后重试"); }
   }
 
   return (
@@ -77,10 +75,12 @@ export function NavUser({
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
+          {!auth.isSSO() && (
             <DropdownMenuItem onClick={() => setPwOpen(true)}>
               <KeyRound />
               修改密码
             </DropdownMenuItem>
+          )}
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
               <LogOut />

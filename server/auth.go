@@ -119,6 +119,14 @@ func extractToken(r *http.Request) string {
 // /api/auth/* and /api/health are exempt.
 func (s *Server) requireAuth(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if s.oidcAuth != nil {
+			if r.URL.Path == "/api/health" || r.Context().Value(oidcContextKey{}) == true {
+				h.ServeHTTP(w, r)
+			} else {
+				writeErr(w, 401, "需要统一登录")
+			}
+			return
+		}
 		p := r.URL.Path
 		if strings.HasPrefix(p, "/api/auth/") || p == "/api/health" {
 			h.ServeHTTP(w, r)

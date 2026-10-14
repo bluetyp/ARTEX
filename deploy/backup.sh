@@ -14,7 +14,7 @@ fi
 "${compose[@]}" exec -T postgres pg_dump -U artex -d artex -Fc > "$OUT/postgres.dump"
 test -s "$OUT/postgres.dump"
 "${compose[@]}" exec -T postgres pg_restore --list < "$OUT/postgres.dump" >/dev/null
-tar -czf "$OUT/state.tar.gz" --exclude=state/postgres .env image.env docker-compose.yml state
+tar -czf "$OUT/state.tar.gz" --exclude=state/postgres .env image.env docker-compose.yml state secrets trust
 tar -tzf "$OUT/state.tar.gz" >/dev/null
 sha256sum "$OUT/postgres.dump" "$OUT/state.tar.gz" > "$OUT/SHA256SUMS"
 echo "backup=$OUT"

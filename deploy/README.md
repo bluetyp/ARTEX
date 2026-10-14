@@ -24,13 +24,41 @@ The application is non-root, has no Docker socket, and publishes only loopback
 18500 (web/API) and 18501 (recording proxy). Its tool processes share the application
 container and network: do not treat it as isolation between untrusted tenants.
 
-Initialize the administrator over loopback `POST /api/auth/init` with a generated
-password **before** enabling nginx/DNS. Store the password in a root-only secrets
-file outside the workspace. Verify login, protected routes return 401 anonymously,
-first-init cannot repeat, and tasks/assets/findings are empty. No mock seed data.
-Then install `nginx.conf`, run `nginx -t`, reload, and create a proxied Cloudflare
-A record. The reused certificate is a Cloudflare Origin certificate, not a public CA.
-SSE buffering is disabled. Access logging is disabled to avoid JWT query leakage.
+## Private SSO (required for production)
+
+Production uses native oauth2_permission OIDC, not the standalone ARTEX password.
+Register internal application `artex` (self-registration disabled), confidential
+client `artex-web`, exact redirect `https://artex.zheqikejiai.com/auth/callback`,
+scopes `openid profile`, authorization_code + refresh_token grants. Use platform
+Argon2id secret hashing; set Access Token TTL 300 seconds and refresh TTL 8 hours.
+Grant `artex:admin` only to explicitly authorized, active internal identities.
+Any other SSO account is denied, including accounts registered for other apps.
+
+Put the client secret in `secrets/artex-oidc-client-secret` (0600, UID 10001).
+Set OIDC_SECRET_PATH and OIDC_CA_BUNDLE in .env. The trust bundle combines system
+CAs and Cloudflare Origin CA; it must be readable by UID 10001 (0644). The container
+pins the SSO hostname to host-gateway and verifies HTTPS, without disabling TLS.
+
+The backend uses state + nonce + PKCE S256, verified ID Tokens for identity only,
+and Access Token `/perm/me` responses for exact application + role authorization.
+Opaque Secure/HttpOnly/SameSite=Lax cookies reference hashed session handles in
+PostgreSQL; tokens are AES-GCM encrypted using a domain-separated key derived from
+the persisted jwt.key. Sessions survive restarts and have an 8-hour maximum age.
+Permissions are checked per request; role changes take effect after a fresh token
+is issued/refreshed (up to the 5-minute Access Token TTL), not instantly from SQL.
+Mutation requests require the exact ARTEX Origin. Logout invalidates the ARTEX
+session; it does not log the user out of other SSO applications.
+
+Local password login, initialization and password changes are disabled in OIDC
+mode. Old ARTEX JWTs, query tokens and spoofed SSO headers cannot authorize access.
+The entire UI/static/API surface is authenticated; health is loopback-only at
+nginx. The minimal auth status, OIDC handshake and logged-out page remain public.
+No scans/demo data are created during deployment or acceptance tests.
+
+Only reopen nginx after targeted tests and loopback fail-closed checks pass.
+Install nginx.conf, run nginx -t, then reload. DNS remains Cloudflare-proxied HTTPS;
+"private" here means authorized internal accounts only, not a VPN-only network.
+SSE buffering and cache are disabled; query/access logging is off to protect codes.
 
 ## Operations
 
@@ -44,6 +72,9 @@ Backups briefly stop the application for consistent SQLite/files, dump PostgreSQ
 in custom format, and restart via EXIT trap. The DB container is not recreated.
 Backups contain secrets and must remain root-only. A failed rollout is not silently
 rolled back: examine logs and the recorded pre-deploy backup.
+
+Never roll back a private instance to a pre-SSO image with the public ingress open.
+First install a deny/maintenance ingress; then restore the selected version.
 
 Rollback code: select a previously verified SHA and invoke that release's
 `deploy/deploy.sh SHA 127.0.0.1:15000/artex/app:SHA`. Database schema migrations run

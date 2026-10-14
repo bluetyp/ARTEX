@@ -31,9 +31,9 @@ export function AccountSwitcher({
   const [activeUser, setActiveUser] = useState(users[0]);
   const [pwOpen, setPwOpen] = useState(false);
 
-  function handleLogout() {
-    auth.clearToken();
-    window.location.href = "/login";
+  async function handleLogout() {
+    try { await auth.logout(); }
+    catch { window.alert("退出失败，请稍后重试"); }
   }
 
   if (!activeUser) {
@@ -78,10 +78,12 @@ export function AccountSwitcher({
             </DropdownMenuItem>
           ))}
           <DropdownMenuSeparator />
+          {!auth.isSSO() && (
           <DropdownMenuItem onClick={() => setPwOpen(true)}>
             <KeyRound />
             修改密码
           </DropdownMenuItem>
+          )}
           <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
             <LogOut />
             退出登录

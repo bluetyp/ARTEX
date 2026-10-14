@@ -45,6 +45,7 @@ type Server struct {
 
 	skillDir string // root directory for skill subdirectories
 	jwtKey   []byte // HS256 signing key loaded from / generated into dataDir/jwt.key
+	oidcAuth *oidcAuth
 
 	// concMu serializes concurrency-cap decisions (admission + reconcile) so a
 	// scheduler tick and an HTTP settings change / task creation can't both count
@@ -151,6 +152,12 @@ func New(ctx context.Context, m *Manager, skillDir string, dataDir string, keyDi
 		profChatAgents: map[int64]*agent.ChatAgent{},
 		provByProfile:  map[int64]*provEntry{}, llmHealth: newLLMHealthRegistry(m.pg),
 		taskAgents: map[string]*taskAgentBundle{}, archiveWake: make(chan struct{}, 1)}
+	if mode := os.Getenv("ARTEX_AUTH_MODE"); mode != "" && mode != "local" {
+		s.oidcAuth, err = newOIDCAuth(ctx, m.pg.DB, key)
+		if err != nil {
+			log.Fatalf("[auth] OIDC: %v", err)
+		}
+	}
 	s.initSideQuestions()
 	// 熔断阈值/冷却是失败路径上的热参数，启动时把全局重试策略推给 Registry 一次；
 	// 之后每次保存策略再推一次（saveLLMRetryPolicy）。
@@ -939,6 +946,9 @@ func (s *Server) Handler() http.Handler {
 	root := http.NewServeMux()
 	root.Handle("/api/", api)
 	root.Handle("/", s.webuiHandler())
+	if s.oidcAuth != nil {
+		return s.oidcAuth.wrap(root)
+	}
 	return root
 }
 

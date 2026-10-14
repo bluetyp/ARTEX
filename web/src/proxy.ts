@@ -1,23 +1,22 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const AUTH_PAGES = ["/login", "/setup"];
+const AUTH_PAGES = ["/login", "/auth/login", "/auth/callback", "/auth/logged-out"];
 
 export function proxy(request: NextRequest) {
   // Mock demo：无真实登录，放行所有页面（客户端 auth 守卫也会放行）。
   if (process.env.NEXT_PUBLIC_MOCK === "1") return NextResponse.next();
 
   const { pathname } = request.nextUrl;
-  const token = request.cookies.get("artex_token")?.value;
+  const session = request.cookies.get("__Host-artex_sso")?.value;
   const isAuthPage = AUTH_PAGES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 
-  // 未登录 → 跳转登录页
-  if (!token && !isAuthPage) {
-    return NextResponse.redirect(new URL("/login", request.url));
+  if (!session && !isAuthPage) {
+    return NextResponse.redirect(new URL("/auth/login", request.url));
   }
 
-  // 已登录时访问登录/初始化页 → 跳转主界面
-  if (token && isAuthPage) {
+  // The Go wrapper remains authoritative; this only avoids flashing protected pages.
+  if (session && isAuthPage && pathname === "/login") {
     return NextResponse.redirect(new URL("/function/tasks", request.url));
   }
 

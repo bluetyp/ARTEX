@@ -31,7 +31,7 @@ RUN go mod download
 COPY . .
 # 前端静态产物从 web 阶段拷入（.dockerignore 已排除宿主 dist，不会冲突）
 COPY --from=web /web/out/ server/webui/dist/
-RUN go test ./config ./cmd/artex && go test ./server -run '^TestValidatePassword$' -count=1
+RUN go test ./config ./cmd/artex && go test ./server -run '^Test(ValidatePassword|OIDC)' -count=1
 ARG REVISION=dev
 RUN CGO_ENABLED=0 GOARCH="${TARGETARCH}" go build -tags embedui -trimpath -ldflags "-s -w -X main.version=dev-${REVISION}" -o /out/artex ./cmd/artex
 
