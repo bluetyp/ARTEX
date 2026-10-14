@@ -66,6 +66,8 @@ AI 自主渗透测试系统（Go 后端 + Next.js 前端）
 
 ## 安装
 
+自构建生产部署（Jenkins → 私有 Registry → 主 H）：见 [deploy/README.md](deploy/README.md)。该路径使用真实后端、关闭 Mock，并持久化独立的 JWT 密钥和数据库。
+
 > 依赖数据库 **PostgreSQL**；探索需配置 **LLM**（`ANTHROPIC_API_KEY` 或 `OPENAI_API_KEY`，也可在 UI 里配）。
 
 ### 方式一：一键安装脚本（推荐）

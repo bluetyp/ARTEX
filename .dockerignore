@@ -1,4 +1,12 @@
 .git
+.env
+.env.*
+**/.env
+**/.env.*
+config.json
+jwt.key
+backups
+secrets
 **/node_modules
 web/.next
 web/out
