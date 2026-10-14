@@ -22,7 +22,7 @@ compose=(docker compose --env-file .env -f docker-compose.yml)
 "${compose[@]}" pull
 ACTUAL=$(docker image inspect "$ARTEX_IMAGE" --format '{{index .Config.Labels "org.opencontainers.image.revision"}}')
 test "$ACTUAL" = "$REVISION"
-"${compose[@]}" up -d --no-build --no-recreate postgres
+"${compose[@]}" up -d --no-build --no-recreate --wait --wait-timeout 120 postgres
 "${compose[@]}" up -d --no-build --no-deps --wait --wait-timeout 240 artex
 printf 'ARTEX_IMAGE=%s
 ' "$ARTEX_IMAGE" > image.env

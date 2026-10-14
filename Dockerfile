@@ -42,9 +42,6 @@ ARG PLAYWRIGHT_DOWNLOAD_HOST=https://cdn.npmmirror.com/binaries/playwright
 ARG PLAYWRIGHT_MCP_VERSION=0.0.83
 ARG PLAYWRIGHT_CLI_VERSION=0.1.22
 ARG PLAYWRIGHT_VERSION=1.64.0-alpha-1790635538000
-ARG REVISION=dev
-LABEL org.opencontainers.image.source="https://github.com/bluetyp/ARTEX" \
-      org.opencontainers.image.revision="${REVISION}"
 # 运行层的全局 npm 装包与 chromium 下载同样走国内源（对全球网络同样可达）
 ENV npm_config_registry=$NPM_REGISTRY \
     PLAYWRIGHT_DOWNLOAD_HOST=$PLAYWRIGHT_DOWNLOAD_HOST \
@@ -75,6 +72,9 @@ COPY --from=gobuild /out/artex /app/artex
 COPY start.sh /app/start.sh
 RUN chmod +x /app/artex /app/start.sh
 COPY skills/ /app/skills/
+ARG REVISION=dev
+LABEL org.opencontainers.image.source="https://github.com/bluetyp/ARTEX" \
+      org.opencontainers.image.revision="${REVISION}"
 # data/（SQLite + jwt.key）持久化点
 VOLUME ["/app/data"]
 EXPOSE 8787 8788
