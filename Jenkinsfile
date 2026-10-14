@@ -28,7 +28,7 @@ pipeline {
                 sh '''#!/bin/bash
 set -euo pipefail
 docker buildx build --builder hermes-central --platform linux/arm64     --build-arg REVISION="$REVISION"     --build-arg GOPROXY=https://proxy.golang.org,direct     --build-arg NPM_REGISTRY=https://registry.npmjs.org     --build-arg PLAYWRIGHT_DOWNLOAD_HOST=https://cdn.playwright.dev     --progress plain --push -t "$ARTEX_IMAGE" .
-ssh h-host "docker manifest inspect '$ARTEX_IMAGE' >/dev/null"
+ssh h-host "docker manifest inspect --insecure '$ARTEX_IMAGE' >/dev/null"
 '''
             }
         }
